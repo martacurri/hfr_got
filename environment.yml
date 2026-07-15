@@ -1,0 +1,20 @@
+name: hfr-qc
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - xarray
+  - netcdf4
+  - dask
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  - cartopy
+  - scikit-learn
+  - requests
+  - pytest
+  - jupyterlab
+  - pip
+  - pip:
+      - erddapy

@@ -1,9 +1,11 @@
-# HF Radar Network — Gulf of Trieste
+# HF Radar Network — Gulf of Trieste (HFR-NAdr)
 
-Station map of the HFR-NAdr high-frequency radar network
-(AURI, TRI1, IZOL, PIRA).
+Public data and station information for the HFR-NAdr high-frequency radar
+network in the Gulf of Trieste (AURI, TRI1, IZOL, PIRA).
 
-**[➤ Open the interactive map](https://martacurri.github.io/hfr_got/map.html)**
-(hover over a station to see its details)
+**[-> Visit the site](https://martacurri.github.io/hfr_got/)** for the
+station map and downloadable current data (2021-present).
 
-![Station map](got_map.png)
+`src/` and `scripts/` contain the pipeline used to download and unify the
+data from the [EU HFR Node ERDDAP](https://erddap.hfrnode.eu/erddap/) — see
+`environment.yml` for the required Python environment.

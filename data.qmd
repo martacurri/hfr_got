@@ -1,0 +1,20 @@
+---
+title: "HFR-NAdr Available Data (2021-present)"
+---
+
+Unified HFR-NAdr current data for the Gulf of Trieste, covering the period
+2021-present. Each file has a regularized 30-minute time axis and
+CF-1.8-style attributes. Radial datasets are on each station's native
+range/bearing grid; the Total dataset is on a regular lat/lon grid.
+
+| File | Description | Size | Download |
+|---|---|---|---|
+| `hfr_nadr_total_2021_present_unified.nc` | Total surface currents (all stations combined) | 311.3 MB | [Download](https://github.com/martacurri/hfr_got/releases/download/data-2021-present-v1/hfr_nadr_total_2021_present_unified.nc) |
+| `hfr_nadr_auri_2021_present_unified.nc` | Radial currents — AURI station (Aurisina, IT) | 370.9 MB | [Download](https://github.com/martacurri/hfr_got/releases/download/data-2021-present-v1/hfr_nadr_auri_2021_present_unified.nc) |
+| `hfr_nadr_izol_2021_present_unified.nc` | Radial currents — IZOL station (Izola, SI) | 45.5 MB | [Download](https://github.com/martacurri/hfr_got/releases/download/data-2021-present-v1/hfr_nadr_izol_2021_present_unified.nc) |
+| `hfr_nadr_pira_2021_present_unified.nc` | Radial currents — PIRA station (Piran, SI) | 332.6 MB | [Download](https://github.com/martacurri/hfr_got/releases/download/data-2021-present-v1/hfr_nadr_pira_2021_present_unified.nc) |
+| `hfr_nadr_tri1_2021_present_unified.nc` | Radial currents — TRI1 station (Trieste, IT) | 190.1 MB | [Download](https://github.com/martacurri/hfr_got/releases/download/data-2021-present-v1/hfr_nadr_tri1_2021_present_unified.nc) |
+
+Source: [EU HFR Node ERDDAP](https://erddap.hfrnode.eu/erddap/griddap/). To
+reproduce or extend this dataset yourself, see `src/` and `scripts/` in this
+repository (requires the environment in `environment.yml`).

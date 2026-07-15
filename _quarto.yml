@@ -1,0 +1,21 @@
+project:
+  type: website
+  output-dir: _site
+  render:
+    - index.qmd
+    - data.qmd
+
+website:
+  title: "HFR-NAdr — Gulf of Trieste"
+  page-footer: "HFR-NAdr network — Gulf of Trieste"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: data.qmd
+        text: Data
+
+format:
+  html:
+    theme: cosmo
+    toc: false
