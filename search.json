@@ -1,0 +1,16 @@
+[
+  {
+    "objectID": "data.html",
+    "href": "data.html",
+    "title": "HFR-NAdr Available Data (2021-present)",
+    "section": "",
+    "text": "Unified HFR-NAdr current data for the Gulf of Trieste, covering the period 2021-present. Each file has a regularized 30-minute time axis and CF-1.8-style attributes. Radial datasets are on each station’s native range/bearing grid; the Total dataset is on a regular lat/lon grid.\n\n\n\nFile\nDescription\nSize\nDownload\n\n\n\n\nhfr_nadr_total_2021_present_unified.nc\nTotal surface currents (all stations combined)\n311.3 MB\nDownload\n\n\nhfr_nadr_auri_2021_present_unified.nc\nRadial currents — AURI station (Aurisina, IT)\n370.9 MB\nDownload\n\n\nhfr_nadr_izol_2021_present_unified.nc\nRadial currents — IZOL station (Izola, SI)\n45.5 MB\nDownload\n\n\nhfr_nadr_pira_2021_present_unified.nc\nRadial currents — PIRA station (Piran, SI)\n332.6 MB\nDownload\n\n\nhfr_nadr_tri1_2021_present_unified.nc\nRadial currents — TRI1 station (Trieste, IT)\n190.1 MB\nDownload\n\n\n\nSource: EU HFR Node ERDDAP. To reproduce or extend this dataset yourself, see src/ and scripts/ in this repository (requires the environment in environment.yml)."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "HF Radar Network — Gulf of Trieste",
+    "section": "",
+    "text": "Station map of the HFR-NAdr high-frequency radar network (AURI, TRI1, IZOL, PIRA). Hover over a station to see its details.\n      \nSee the Data page for downloadable current data.\nWP1 system inventory report: forthcoming (pending final corrections)."
+  }
+]
