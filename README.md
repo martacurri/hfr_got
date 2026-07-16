@@ -10,14 +10,14 @@ institutions: AURI (OGS), TRI1 (ARPA), IZOL (NIB) and PIRA (ARSO).
 | File / folder | Description |
 |---|---|
 | `index.qmd`, `data.qmd` | Source pages for the published website (station map, data downloads) |
-| `wp1.pdf` | WP1 system inventory report |
+| `wp1.pdf` | Work Project 1 system inventory report |
 | `got_map.png` | Station map image (GEBCO bathymetry base) |
 | `src/download.py`, `src/unify.py` | Pipeline to download and unify station data from the EU HFR Node |
 | `scripts/run_full_download.py`, `scripts/run_unification.py` | Entry-point scripts for the pipeline above |
 | `environment.yml` | Python environment required to run the pipeline |
 | `_quarto.yml`, `_site/` | Quarto website project/build files |
 
-## WP1 report
+## Work Project 1 report
 
 [`wp1.pdf`](wp1.pdf) — *Collecting and editing metadata from HFR GOT*
 (Curri, 2026). This is the system inventory report for the network: station
@@ -42,14 +42,3 @@ pipeline used to produce these files from the
 `environment.yml` for the required Python environment.
 
 **[-> Open the data page](https://martacurri.github.io/hfr_got/data.html)**
-
-## Updates
-
-- **2026-07-16**: Added the WP1 system inventory report (`wp1.pdf`) —
-  station metadata, operating frequencies/resolution, measured variables,
-  QC test thresholds, and data availability for the HFR-NAdr network
-  (2015-2026, currents; 2021-present publicly available). Updated the
-  station map (`got_map.png`) with a refreshed GEBCO bathymetry
-  visualization.
-- **2026-07-16**: Reorganized the README (repository/topic overview, PDF
-  role, and direct links to the map and data pages).
