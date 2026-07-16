@@ -15,4 +15,4 @@ PIRA). Hover over a station to see its details.
 
 See the [Data](data.qmd) page for downloadable current data.
 
-WP1 system inventory report: forthcoming (pending final corrections).
+WP1 system inventory report: [Collecting and editing metadata from HFR GOT](wp1.pdf) (Curri, 2026) — station metadata, operating parameters, measured variables, QC thresholds, and data availability for the HFR-NAdr network.
