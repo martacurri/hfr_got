@@ -1,23 +1,39 @@
 # HFR-NAdr — Gulf of Trieste
 
-This repository is for the work on HFR (high-frequency radar) data in the
-Gulf of Trieste (GoT).
+This repository holds the work on high-frequency radar (HFR) data for
+**HFR-NAdr**, the network operating in the Gulf of Trieste (northern
+Adriatic Sea). The network has four stations run by three institutions —
+AURI (OGS), TRI1 (ARPA FVG), IZOL (NIB) and PIRA (ARSO) — measuring surface
+current velocities since 2015, with data from 2021 onward published here.
 
-## Station map
-
-**[-> Open the station map](https://martacurri.github.io/hfr_got/)**
-
-## Work packages
+Work is organized into work packages (WP), each with its own report and
+code:
 
 | | |
 |---|---|
-| **[WP1](wp1/)** | [`wp1.pdf`](wp1/wp1.pdf) — system inventory report, plus the data download/unification pipeline |
-| **[WP2](wp2/)** | [`wp2.pdf`](wp2/wp2.pdf) — effectiveness analysis of the existing QC algorithms, plus the analysis scripts |
+| **[WP1](wp1/)** | System inventory: station metadata, operating parameters, measured variables, QC test thresholds, and data availability across the network — plus the pipeline that downloads and unifies the published data. |
+| **[WP2](wp2/)** | Effectiveness analysis of the existing EU HFR Node QC algorithms — inventories the current QC tests and quantifies what they catch across the archive — plus the analysis scripts. |
+
+## Station map
+
+Interactive map of the four HFR-NAdr stations, with institution, location,
+frequency and manufacturer shown on hover.
+
+**[-> Open the station map](https://martacurri.github.io/hfr_got/)**
+
+## Reports
+
+- **[`wp1/wp1.pdf`](wp1/wp1.pdf)** — *Collecting and editing metadata from HFR GOT* (Curri, 2026)
+- **[`wp2/wp2.pdf`](wp2/wp2.pdf)** — *Evaluation of the effectiveness of existing QC algorithms* (Curri, 2026)
 
 ## Data downloads
 
+Unified current data (2021-present) for the Total field and each of the
+four radial stations, as NetCDF files with a regularized 30-minute time
+axis and CF-1.8-style attributes, produced by the WP1 pipeline from the
+[EU HFR Node ERDDAP](https://erddap.hfrnode.eu/erddap/).
+
 **[-> Open the data page](https://martacurri.github.io/hfr_got/data.html)**
 
-Unified current data (2021-present) for the Total field and each of the four
-radial stations, produced by the WP1 pipeline — see [`environment.yml`](environment.yml)
-for the Python environment shared by both work packages' code.
+Both WP1's and WP2's code share one Python environment — see
+[`environment.yml`](environment.yml).
