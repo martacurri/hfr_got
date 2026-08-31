@@ -1,3 +1,12 @@
 /.quarto/
 /_site/
 **/*.quarto_ipynb
+
+# WP2 analysis scripts: raw/processed data and generated outputs are not
+# checked in (too large for git; data is downloaded separately, see wp2/README.md)
+wp2/data/raw/
+wp2/data/processed/**/*.nc
+wp2/outputs/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/

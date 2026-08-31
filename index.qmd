@@ -15,4 +15,6 @@ PIRA). Hover over a station to see its details.
 
 See the [Data](data.qmd) page for downloadable current data.
 
-WP1 system inventory report: [Collecting and editing metadata from HFR GOT](wp1.pdf) (Curri, 2026) — station metadata, operating parameters, measured variables, QC thresholds, and data availability for the HFR-NAdr network.
+**WP1** system inventory report: [Collecting and editing metadata from HFR GOT](wp1/wp1.pdf) (Curri, 2026) — station metadata, operating parameters, measured variables, QC thresholds, and data availability for the HFR-NAdr network.
+
+**WP2** report: [Evaluation of the effectiveness of existing QC algorithms](wp2/wp2.pdf) (Curri, 2026) — inventory of the existing EU HFR Node QC tests, quantitative flag analysis, known-artefact gap analysis, and upgrade recommendations for WP3.
