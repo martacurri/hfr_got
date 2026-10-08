@@ -11,9 +11,8 @@ WP3's new QC development.
 |---|---|
 | `scripts/qc_flag_analysis.py` | Flag histograms, monthly bad-fraction time series, and per-cell spatial bad-fraction maps for every existing QC test |
 
-(The gap-analysis script that tests for artefacts the existing QC misses —
-divergence, vorticity, neighbor-consistency, temporal spike, climatology —
-has moved to WP3, where that new-QC-development work belongs.)
+(The development of new QC algorithms for the artefacts the existing QC
+misses is in [WP3](../wp3/).)
 
 ## 1. Set up the environment
 

@@ -13,6 +13,7 @@ code:
 |---|---|
 | **[WP1](wp1/)** | System inventory: station metadata, operating parameters, measured variables, QC test thresholds, and data availability across the network — plus the pipeline that downloads and unifies the published data. |
 | **[WP2](wp2/)** | Effectiveness analysis of the existing EU HFR Node QC algorithms — inventories the current QC tests and quantifies what they catch across the archive — plus the analysis scripts. |
+| **[WP3](wp3/)** | New QC algorithms for anomalies the existing QC misses — k-means regime clustering, sliding-window kernels with an Isolation Forest anomaly score, and a new per-cell QC flag for non-physical reversals (divergence, convergence, shear) with a cross-station check — plus the scripts. |
 
 ## Station map
 
@@ -35,5 +36,5 @@ axis and CF-1.8-style attributes, produced by the WP1 pipeline from the
 
 **[-> Open the data page](https://martacurri.github.io/hfr_got/data.html)**
 
-Both WP1's and WP2's code share one Python environment — see
+The code of all work packages shares one Python environment — see
 [`environment.yml`](environment.yml).

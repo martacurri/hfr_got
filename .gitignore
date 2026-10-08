@@ -10,3 +10,9 @@ wp2/outputs/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+
+# WP3 scripts: same rule as WP2 -- downloaded data, computed kernel files and
+# generated outputs are not checked in (see wp3/README.md)
+wp3/data/processed/**/*.nc
+wp3/data/processed/kernels/
+wp3/outputs/
