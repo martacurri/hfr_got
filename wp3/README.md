@@ -1,5 +1,8 @@
 # WP3 — New QC algorithms for anomalies the existing QC misses
 
+[`wp3.pdf`](wp3.pdf) — report: selection of the anomaly types, the new kernel-based
+QC flag (methods and parameters), and its validation against the existing QC.
+
 Development of new quality-control (QC) algorithms for the HFR-NAdr archive
 (2021-present currents), aimed at non-physical divergences, convergences and
 shear between neighbouring cells, which the existing EU HFR Node QC does not
@@ -19,6 +22,7 @@ WP1/WP2.
 | `scripts/kernel_qc_flag.py` | the new QC flag: reversal vs outburst, cross-station check, per-cell codes |
 | `scripts/kernel_qc_report.py` | tuning, test set, validation months, summary tables and figures for the new QC flag |
 | `scripts/plot_qc_flagged_field.py` | current fields with each cell's existing QC-test failures; also provides colormap/grid helpers used by the kernel figures |
+| `scripts/plot_kernel_shapes.py` | the four half-split kernels for 4×4 and 3×3 windows (report Figure 3) |
 
 ### The new QC flag in short
 
@@ -94,6 +98,7 @@ python scripts/kernel_plots.py --top                   # ~11 min: only the most 
 python scripts/kernel_plots.py --featuremap total 2024-10-22T08:00   # one product and time
 python scripts/plot_radial_vectors.py izol 2024-04-08T23:00
 python scripts/plot_qc_flagged_field.py                # ~5 min: existing-QC flags on the current field
+python scripts/plot_kernel_shapes.py                   # < 1 min: kernel weight diagram
 ```
 
 `--report` uses the parameters saved by `--tune`; without them it uses the

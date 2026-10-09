@@ -26,6 +26,7 @@ frequency and manufacturer shown on hover.
 
 - **[`wp1/wp1.pdf`](wp1/wp1.pdf)** — *Collecting and editing metadata from HFR GOT* (Curri, 2026)
 - **[`wp2/wp2.pdf`](wp2/wp2.pdf)** — *Evaluation of the effectiveness of existing QC algorithms* (Curri, 2026)
+- **[`wp3/wp3.pdf`](wp3/wp3.pdf)** — *Development of new QC algorithms for the detection of anomalies that remain undetected by existing algorithms* (Curri, 2026)
 
 ## Data downloads
 
