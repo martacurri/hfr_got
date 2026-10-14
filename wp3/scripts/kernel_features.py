@@ -23,6 +23,8 @@ Array orientation everywhere: row 0 = SOUTH (latitude increases with row
 index), col 0 = WEST -- so "north" = higher row index, not row 0.
 
 Run: python scripts/kernel_features.py [--window 4 3] [--products ...]
+     [--variant shapes]   (half-splits + SPK/STH/STV/STD/STU at 3x3, + PAT at 4x4,
+                           files kernel_responses_<product>[_3x3]_shapes.nc)
 """
 from pathlib import Path
 
@@ -69,6 +71,40 @@ def make_kernels(n=WINDOW):
         w[s < 0] = -1.0 / (s < 0).sum()
         kernels[name] = w
     return kernels
+
+
+# Extra kernel shapes (analysis only): each = mean(target cells) - mean(surround cells).
+#   SPK  3x3 spike:  centre - 8 neighbours
+#   STH/STV/STD/STU  3x3 stripes: centre row / column / NW->SE diagonal / SW->NE diagonal - other 6 cells
+#   PAT  4x4 patch:  centre 2x2 - 12 ring cells
+SHAPE_NAMES = {3: ["SPK", "STH", "STV", "STD", "STU"], 4: ["PAT"]}
+
+
+def make_shape_kernels(n):
+    """Target/surround kernels for window size n (3 or 4), array orientation
+    (row 0 = south). Target weights sum to +1, surround to -1."""
+    idx = np.arange(n) - (n - 1) / 2.0
+    i = idx[:, None] + np.zeros((1, n))  # row offset, + = north
+    c = idx[None, :] + np.zeros((n, 1))  # col offset, + = east
+    if n == 3:
+        targets = {"SPK": (i == 0) & (c == 0), "STH": i == 0, "STV": c == 0,
+                   "STD": i + c == 0,   # NW -> SE
+                   "STU": i - c == 0}   # SW -> NE
+    elif n == 4:
+        targets = {"PAT": (np.abs(i) < 1) & (np.abs(c) < 1)}
+    else:
+        raise ValueError(f"no shape kernels for {n}x{n}")
+    kernels = {}
+    for name in SHAPE_NAMES[n]:
+        t = targets[name]
+        w = np.where(t, 1.0 / t.sum(), -1.0 / (~t).sum())
+        kernels[name] = w
+    return kernels
+
+
+def shape_kernel_set(n):
+    """The 'shapes' variant: the 4 half-splits plus the new shapes of that size."""
+    return {**make_kernels(n), **make_shape_kernels(n)}
 
 
 def apply_good_mask(values, qcflag):
@@ -152,8 +188,9 @@ for _s in ["auri", "pira", "tri1", "izol"]:
 TIME_CHUNK = 5000  # timestamps per convolution batch (~100 MB of windows)
 
 
-def feature_path(product, n=WINDOW):
-    return FEATURE_DIR / f"kernel_responses_{product}{size_suffix(n)}.nc"
+def feature_path(product, n=WINDOW, variant=""):
+    tag = f"_{variant}" if variant else ""
+    return FEATURE_DIR / f"kernel_responses_{product}{size_suffix(n)}{tag}.nc"
 
 
 def load_good_fields(product):
@@ -187,15 +224,15 @@ def load_good_snapshot(product, time_iso):
     ds.close()
     return out
 
-def write_product(product, n=WINDOW):
+def write_product(product, n=WINDOW, variant=""):
     path, channels = PRODUCTS[product]
-    kernels = make_kernels(n)
+    kernels = shape_kernel_set(n) if variant == "shapes" else make_kernels(n)
     ds = xr.open_dataset(path)
     ds = ds.isel(time=slice(source_start_index(ds["time"].values, product), None))
     times = ds["time"].values
     lat, lon = ds["latitude"].values, ds["longitude"].values
     n_time = len(times)
-    out_path = feature_path(product, n)
+    out_path = feature_path(product, n, variant)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     with Dataset(out_path, "w") as nc:
@@ -213,7 +250,7 @@ def write_product(product, n=WINDOW):
             cv[:] = window_centres(coord, n)
         nc_vars = {}
         for ch in channels:
-            for k in KERNEL_NAMES:
+            for k in kernels:
                 var = nc.createVariable(f"{k}_{ch}", "f4", ("time", "win_lat", "win_lon"),
                                         zlib=True, complevel=4, fill_value=np.float32(np.nan))
                 var.units = "m/s"
@@ -233,7 +270,7 @@ def write_product(product, n=WINDOW):
             qc = chunk["QCflag"].values
             for ch, src in channels.items():
                 resp = kernel_responses(apply_good_mask(chunk[src].values, qc), kernels)
-                for k in KERNEL_NAMES:
+                for k in kernels:
                     nc_vars[f"{k}_{ch}"][t0:t1] = resp[k]
             n_complete += int(np.isfinite(resp["TB"]).sum())
             print(f"  {product}: {t1}/{n_time}")
@@ -246,11 +283,12 @@ def main():
     import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument("--window", type=int, nargs="+", default=[4, 3], help="window sizes (default: 4 3)")
+    ap.add_argument("--variant", default="", help="'shapes' adds the extra shapes (spike/stripes 3x3, patch 4x4)")
     ap.add_argument("--products", nargs="+", default=list(PRODUCTS), help="default: all")
     args = ap.parse_args()
     for n in args.window:
         for product in args.products:
-            write_product(product, n)
+            write_product(product, n, args.variant)
 
 
 if __name__ == "__main__":

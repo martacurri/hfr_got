@@ -35,17 +35,18 @@ PREDICT_CHUNK = 1_000_000
 REVIEW_SIZES = [4, 3]  # window sizes scored and shown side by side
 
 
-def models_path(product, n=WINDOW):
-    return FEATURE_DIR / f"kernel_models_{product}{size_suffix(n)}.npz"
+def models_path(product, n=WINDOW, variant=""):
+    tag = f"_{variant}" if variant else ""
+    return FEATURE_DIR / f"kernel_models_{product}{size_suffix(n)}{tag}.npz"
 
 
-def load_models(product, n=WINDOW):
-    with np.load(models_path(product, n)) as z:
+def load_models(product, n=WINDOW, variant=""):
+    with np.load(models_path(product, n, variant)) as z:
         return {k: z[k] for k in z.files}
 
 
-def load_feature_rows(product, n=WINDOW):
-    ds = xr.open_dataset(feature_path(product, n))
+def load_feature_rows(product, n=WINDOW, variant=""):
+    ds = xr.open_dataset(feature_path(product, n, variant))
     names = list(ds.data_vars)
     valid = np.isfinite(ds[names[0]].values)  # all features share one NaN pattern
     t_idx, wi, wj = np.nonzero(valid)
@@ -163,16 +164,18 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--window", type=int, nargs="+", default=REVIEW_SIZES)
     ap.add_argument("--products", nargs="+", default=list(PRODUCTS))
+    ap.add_argument("--variant", default="", help="'shapes' = extra-shape feature files (models only, no top-1%% tables)")
     args = ap.parse_args()
     for n in args.window:
         for product in args.products:
             print(f"== {product} {n}x{n} ==")
-            rows = load_feature_rows(product, n)
+            rows = load_feature_rows(product, n, args.variant)
             print(f"  {len(rows['X']):,} complete windows, features {rows['names']}")
             score = fit_isolation_forest(rows["X"])
-            np.savez(models_path(product, n), t_idx=rows["t_idx"], wi=rows["wi"], wj=rows["wj"], score=score)
-            print(f"Saved: {models_path(product, n)}")
-            write_tables(product, rows, score, n)
+            np.savez(models_path(product, n, args.variant), t_idx=rows["t_idx"], wi=rows["wi"], wj=rows["wj"], score=score)
+            print(f"Saved: {models_path(product, n, args.variant)}")
+            if not args.variant:
+                write_tables(product, rows, score, n)
 
 
 if __name__ == "__main__":

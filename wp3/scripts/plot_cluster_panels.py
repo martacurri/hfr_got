@@ -1,7 +1,8 @@
 """All clusters of one Total k-means run as panels of one figure, same style as
 cluster_regimes.plot_cluster_centroid_vectors (length ~ speed capped at TOTAL_VMAX, TOTAL_SCALE,
 plasma_r 0-TOTAL_VMAX). Usage: python scripts/plot_cluster_panels.py K
-Output: outputs/figures/cluster_total_k<K>_all.png (report figures for K=2 and K=6)."""
+Output: outputs/figures/cluster_total_k<K>_all.png (report figures for K=2 and K=6).
+K > 9 uses 5 columns (K=25 -> 5x5 grid)."""
 import sys
 from pathlib import Path
 
@@ -13,7 +14,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 
 from cluster_regimes import (FIGURES_DIR, PRODUCTS, RANDOM_STATE, SPEED_CMAP, TOTAL_SCALE, TOTAL_VMAX,
-                             build_feature_matrix, centroid_to_grid, standardize)
+                             build_feature_matrix, centroid_to_grid, panel_grid, standardize)
 
 k = int(sys.argv[1])
 path, variables = PRODUCTS["Total"]
@@ -24,8 +25,7 @@ lat, lon = feat["lat"], feat["lon"]
 lon2d, lat2d = np.meshgrid(lon, lat)
 extent = [lon.min() - 0.02, lon.max() + 0.02, lat.min() - 0.02, lat.max() + 0.02]
 
-ncol = min(k, 3)
-nrow = int(np.ceil(k / ncol))
+nrow, ncol = panel_grid(k)
 fig, axes = plt.subplots(nrow, ncol, figsize=(6.2 * ncol, 5.0 if nrow == 1 else 4.0 * nrow), dpi=200,
                          subplot_kw={"projection": ccrs.PlateCarree()}, squeeze=False)
 q = None

@@ -1,7 +1,9 @@
 # WP3 — New QC algorithms for anomalies the existing QC misses
 
 [`wp3.pdf`](wp3.pdf) — report: selection of the anomaly types, the new kernel-based
-QC flag (methods and parameters), and its validation against the existing QC.
+QC flag (methods and parameters), its validation against the existing QC, and an
+extension (Section 5): larger window sizes, k-means with k = 10–25, persistently
+bad grid cells and new kernel shapes.
 
 Development of new quality-control (QC) algorithms for the HFR-NAdr archive
 (2021-present currents), aimed at non-physical divergences, convergences and
@@ -13,9 +15,9 @@ WP1/WP2.
 
 | File | Description |
 |---|---|
-| `scripts/cluster_regimes.py` | k-means clustering (k = 2–8) of whole-domain snapshots, per product (Total and each radial station); cluster summaries and mean-field figures |
+| `scripts/cluster_regimes.py` | k-means clustering (k = 2–8; `--k 10 15 20 25` for the extension) of whole-domain snapshots, per product (Total and each radial station); cluster summaries and mean-field figures |
 | `scripts/plot_cluster_panels.py` | all clusters of one Total k-means run in one figure (`K` = number of clusters) |
-| `scripts/kernel_features.py` | sliding-window "convolution": four half-split kernels (top/bottom, left/right, two diagonals) on 4×4 and 3×3 windows of every timestamp |
+| `scripts/kernel_features.py` | sliding-window "convolution": four half-split kernels (top/bottom, left/right, two diagonals) on 4×4 and 3×3 windows of every timestamp (`--window 5 6` for larger windows, `--variant shapes` for the new kernel shapes) |
 | `scripts/kernel_clustering.py` | Isolation Forest anomaly score for every window |
 | `scripts/kernel_plots.py` | kernel maps, anomaly maps and monthly rates, figures of the most anomalous events |
 | `scripts/plot_radial_vectors.py` | a radial station's velocity field at one time (examples of artefacts the existing QC misses) |
@@ -23,6 +25,9 @@ WP1/WP2.
 | `scripts/kernel_qc_report.py` | tuning, test set, validation months, summary tables and figures for the new QC flag |
 | `scripts/plot_qc_flagged_field.py` | current fields with each cell's existing QC-test failures; also provides colormap/grid helpers used by the kernel figures |
 | `scripts/plot_kernel_shapes.py` | the four half-split kernels for 4×4 and 3×3 windows (report Figure 3) |
+| `scripts/kernel_size_compare.py` | extension: window sizes 3×3 to 6×6 compared — coverage, and where each size ranks the reference examples |
+| `scripts/kernel_shapes_compare.py` | extension: new kernel shapes (spike, stripes, patch) — do they rank the reference errors higher? |
+| `scripts/persistent_bad_cells.py` | extension: grid cells that are always or almost always bad (or almost never valid), per product and per station period |
 
 ### The new QC flag in short
 
@@ -104,6 +109,24 @@ python scripts/plot_kernel_shapes.py                   # < 1 min: kernel weight 
 `--report` uses the parameters saved by `--tune`; without them it uses the
 defaults.
 
+**Extension (report Section 5)** — after the steps above
+
+```
+python scripts/cluster_regimes.py --k 10 15 20 25 --no-figures
+python scripts/cluster_regimes.py --k 10 15 20 25 --no-figures --min-coverage 0.60 --min-cell-valid 0.10
+python scripts/plot_cluster_panels.py 25            # k = 25 figure (5x5 panels)
+python scripts/kernel_features.py --window 5 6      # kernels for 5x5 and 6x6 windows
+python scripts/kernel_clustering.py --window 5 6    # their Isolation Forest scores
+python scripts/kernel_size_compare.py               # window sizes: coverage, examples, figures
+python scripts/kernel_features.py --window 3 4 --variant shapes
+python scripts/kernel_clustering.py --window 3 4 --variant shapes
+python scripts/kernel_shapes_compare.py             # new kernel shapes: ranks + figures
+python scripts/persistent_bad_cells.py              # persistently bad cells: tables + maps
+```
+
+`--min-coverage 0.60` keeps hours with at least 60% of the usual coverage (default
+75%); `--min-cell-valid 0.10` drops cells valid in fewer than 10% of those hours.
+
 ## Outputs
 
 Written to `outputs/reports/` and `outputs/figures/` (created automatically);
@@ -120,7 +143,11 @@ the kernel values and anomaly scores go to `data/processed/kernels/`.
 | `outputs/reports/kernel_qc_windows_<product>.csv` | every flagged window: kernel values, reversal/outburst, cross-station result, code |
 | `outputs/reports/kernel_qc_total_sources.csv` | Total reversals by the radial station(s) showing a jump |
 | `outputs/figures/kernel_qc_field_<product>_<time>.png` | current field with flagged cells (red = 4, orange = 3, blue = outburst/confirmed) |
-| `outputs/figures/cluster_*`, `kernel_*`, `qc_*` | the clustering, kernel and existing-QC figures |
+| `outputs/reports/kmeans_reference_lookup_k10-25[_cov60_cell10].csv` | extension: the cluster of each reference hour for k = 10–25 |
+| `outputs/reports/kernel_sizes_coverage.csv`, `kernel_sizes_examples.csv` | extension: valid windows per size; best window, score and rank of each example per size |
+| `outputs/reports/kernel_shapes_compare.csv` | extension: rank of each test case with and without the new shapes |
+| `outputs/reports/persistent_bad_cells[_by_period].csv` | extension: persistently bad cells per product (and per station period) |
+| `outputs/figures/cluster_*`, `kernel_*`, `qc_*`, `persistent_bad_cells_*` | the clustering, kernel, existing-QC and persistent-bad-cell figures |
 
 The validation set is all days of the reference cases plus three months:
 2025-12 (Bora winter), 2026-07 (calm summer, all four stations) and 2024-10

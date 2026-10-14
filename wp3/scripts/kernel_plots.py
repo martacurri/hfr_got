@@ -33,7 +33,8 @@ FIGURES_DIR = PROJECT_ROOT / "outputs" / "figures"
 RDVA_VMAX = 0.27        # radials' typical speed ceiling, same value behind RADIAL_SCALE
 N_EACH = 5            # review list: this many best events per window size
 TOP_MIN_GAP_DAYS = 3  # review picks at least this far apart, so each is a different event
-BOX_COLOURS = {4: "#ff1493", 3: "#00bcd4"}  # most anomalous window: pink = 4x4, cyan = 3x3
+BOX_COLOURS = {4: "#ff1493", 3: "#00bcd4", 5: "#ff9800", 6: "#2e7d32"}  # most anomalous window per size
+COLOUR_NAMES = {4: "pink", 3: "cyan", 5: "orange", 6: "green"}
 MAP_MIN_WINDOWS = 1000  # cells covered by fewer complete windows are left blank (rate too noisy)
 FIELD_SCALE = 8.0       # = cluster_regimes.TOTAL_SCALE, full-domain quiver
 LAND = cfeature.NaturalEarthFeature("physical", "land", "10m")
@@ -176,11 +177,19 @@ def _draw_kernel_pattern(ax, w):
     ax.set_ylabel("S        N", fontsize=7)
 
 
-def plot_feature_maps(product, time_iso, label, models_by_size=None):
+def featuremap_name(product, time_iso, sizes):
+    """Default sizes (REVIEW_SIZES) keep the WP3 file name; other sets get the
+    sizes in the name, e.g. kernel_featuremaps56_<product>_<time>.png."""
+    tag = "" if sizes is None or list(sizes) == list(REVIEW_SIZES) else "".join(str(n) for n in sizes)
+    return f"kernel_featuremaps{tag}_{product}_{time_iso[:16].replace(':', '')}.png"
+
+
+def plot_feature_maps(product, time_iso, label, models_by_size=None, sizes=None):
     """Field map(s) + every kernel's value at every window position for one
-    timestamp, for BOTH window sizes (4x4 then 3x3). One row per kernel; per
-    size one column with its +/- pattern and one column per component.
+    timestamp, for the given window sizes (default 4x4 then 3x3). One row per
+    kernel; per size one column with its +/- pattern and one column per component.
     models_by_size: {n: models} used for the boxes/ranks (optional)."""
+    sizes = list(REVIEW_SIZES if sizes is None else sizes)
     snap = load_good_snapshot(product, time_iso)
     if snap is None:
         print(f"  {product}: {time_iso} not in archive (or before the product's start date), skipped")
@@ -192,9 +201,9 @@ def plot_feature_maps(product, time_iso, label, models_by_size=None):
     pc = 2 if radial else 1  # number of field-map columns (radials: RDVA + velocity)
     ncol = len(channels)
     widths = [5.2] * pc
-    for _ in REVIEW_SIZES:
+    for _ in sizes:
         widths += [0.9] + [2.6] * ncol
-    fig = plt.figure(figsize=(9 + 6.5 * (pc - 1) + len(REVIEW_SIZES) * (1.2 + 3.6 * ncol), 14), dpi=130)
+    fig = plt.figure(figsize=(9 + 6.5 * (pc - 1) + len(sizes) * (1.2 + 3.6 * ncol), 14), dpi=130)
     gs = fig.add_gridspec(5, len(widths), width_ratios=widths, height_ratios=[0.25, 1, 1, 1, 1],
                           wspace=0.08, hspace=0.25)
     ax0 = _map_axes(fig, gs[1:3, 0], lat, lon)
@@ -209,7 +218,7 @@ def plot_feature_maps(product, time_iso, label, models_by_size=None):
         axv.set_title("velocity (QC-good cells)", fontsize=10, loc="left")
         map_axes.append(axv)
     caption = []
-    for n in REVIEW_SIZES:
+    for n in sizes:
         models = (models_by_size or {}).get(n)
         if models is None:
             continue
@@ -221,7 +230,7 @@ def plot_feature_maps(product, time_iso, label, models_by_size=None):
         for ax in map_axes:
             _outline(ax, snap, int(models["wi"][r]), int(models["wj"][r]), n, BOX_COLOURS[n])
         rank = int((models["score"] > models["score"][r]).sum()) + 1
-        colour_name = "pink" if n == 4 else "cyan"
+        colour_name = COLOUR_NAMES[n]
         caption.append(f"{colour_name} box: most anomalous {n}×{n} window this hour, score {models['score'][r]:.3f}, "
                        f"rank {rank:,} of {len(models['score']):,}")
     if caption:
@@ -229,7 +238,7 @@ def plot_feature_maps(product, time_iso, label, models_by_size=None):
                  transform=ax0.transAxes, fontsize=9, va="top")
     mesh = None
     col = pc
-    for n in REVIEW_SIZES:
+    for n in sizes:
         f = xr.open_dataset(feature_path(product, n)).isel(time=ti)
         we, ae = _cell_edges(f["win_lon"].values), _cell_edges(f["win_lat"].values)
         kernels = make_kernels(n)
@@ -254,9 +263,10 @@ def plot_feature_maps(product, time_iso, label, models_by_size=None):
     cb = fig.colorbar(mesh, cax=cax, orientation="horizontal", extend="both")
     cb.set_label("kernel value = mean(+ half) − mean(− half), m/s", fontsize=9)
     fig.text(leg.x0, leg.y0 + 0.5 * leg.height,
-             "Each coloured square = one window (4×4 or 3×3, placed at its centre). White: the two halves agree.\n"
-             "3×3: the middle row / column / diagonal has weight 0.\n"
-             "Red: the + half is faster toward east (u) / north (v) /\naway from the station (RDVA) than the − half; "
+             f"Each coloured square = one window ({' or '.join(f'{n}×{n}' for n in sizes)}, placed at its centre). "
+             "White: the two halves agree.\n"
+             + "".join(f"{n}×{n}: the middle row / column / diagonal has weight 0.\n" for n in sizes if n % 2)
+             + "Red: the + half is faster toward east (u) / north (v) /\naway from the station (RDVA) than the − half; "
              "blue: the opposite.\n"
              + ("Divergence: TB on v and LR on u are red (halves moving apart);\nconvergence: they are blue."
                 if product == "total" else
@@ -264,7 +274,7 @@ def plot_feature_maps(product, time_iso, label, models_by_size=None):
              fontsize=9, va="top")
     fig.suptitle(f"{product.upper()} — kernels over the whole map at {time_iso[:16]} UTC ({label})",
                  fontsize=12, x=0.05, ha="left", y=0.93)
-    out = FIGURES_DIR / f"kernel_featuremaps_{product}_{time_iso[:16].replace(':', '')}.png"
+    out = FIGURES_DIR / featuremap_name(product, time_iso, sizes)
     fig.savefig(out, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved: {out}")

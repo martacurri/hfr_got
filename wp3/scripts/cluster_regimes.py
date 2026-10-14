@@ -1,7 +1,8 @@
 """WP3: k-means regime clustering over the full 2021-present archive.
 
 Clusters each product (Total, AURI, PIRA, TRI1, IZOL) independently, one
-k-means run per k in 2..8, to see whether unsupervised clustering recovers
+k-means run per k (default 2..8; --k 10 15 20 25 --no-figures for the
+k = 10-25 extension), to see whether unsupervised clustering recovers
 recognizable wind-driven circulation regimes (Bora/Scirocco/Tramontana) on
 its own, and whether a divergence-dominated cluster emerges.
 
@@ -11,7 +12,8 @@ EWCT+NSCT (u+v) jointly; each radial station uses RDVA only (not EWCT/NSCT
 bearing, not an independent measurement).
 
 Outputs:
-  outputs/reports/cluster_summary_<product>.csv
+  outputs/reports/cluster_summary_<product>[_k10-25].csv
+  outputs/reports/kmeans_reference_lookup[_k10-25].csv
   outputs/figures/cluster_<product>_k<k>_cluster<c>.png
 
 Run: python scripts/cluster_regimes.py
@@ -72,7 +74,7 @@ RADIAL_SCALE = TOTAL_SCALE * (0.27 / TOTAL_VMAX)
 SPEED_CMAP = "plasma_r"
 
 
-def build_feature_matrix(path, variables, min_coverage=MIN_COVERAGE):
+def build_feature_matrix(path, variables, min_coverage=MIN_COVERAGE, min_cell_valid=0.0):
     """Builds the (n_kept_timestamps, n_features) feature matrix for one
     product. A cell only counts as valid if QCflag is good AND the raw
     value is non-NaN. A timestamp qualifies ("kept") if its count of valid
@@ -84,6 +86,11 @@ def build_feature_matrix(path, variables, min_coverage=MIN_COVERAGE):
     outside this product's range and has no observations to mean-impute
     from. Remaining per-cell gaps are filled with that cell's own mean
     over the kept timestamps where it WAS valid.
+    min_cell_valid > 0 also drops cells valid in fewer than that
+    fraction of the kept timestamps: a cell that is almost never covered is
+    otherwise almost entirely its own mean, and shows up as the same fixed
+    vector in every cluster (the NE-corner cell 45.770N 13.568E, valid in
+    0.4% of kept Total hours, did exactly that).
     """
     ds = xr.open_dataset(path)
     lat = ds["latitude"].values
@@ -107,7 +114,8 @@ def build_feature_matrix(path, variables, min_coverage=MIN_COVERAGE):
 
     times = ds["time"].values[keep_time]
     valid_mask_kept = valid_mask[keep_time]           # (n_kept, n_grid)
-    cell_mask = valid_mask_kept.any(axis=0)            # (n_grid,)
+    cell_frac = valid_mask_kept.mean(axis=0)           # (n_grid,)
+    cell_mask = (cell_frac > 0) & (cell_frac >= min_cell_valid)
 
     channels_kept = []
     for arr in channel_arrays:
@@ -153,9 +161,9 @@ def standardize(X):
     return X_scaled, mean, std_safe
 
 
-def run_kmeans_sweep(X_scaled):
+def run_kmeans_sweep(X_scaled, k_values=K_VALUES):
     results = {}
-    for k in K_VALUES:
+    for k in k_values:
         km = KMeans(n_clusters=k, random_state=RANDOM_STATE, n_init=10)
         labels = km.fit_predict(X_scaled)
         sil = silhouette_score(
@@ -262,7 +270,7 @@ def plot_cluster_centroid_vectors(u_grid, v_grid, lat, lon, product_name, k, clu
     print(f"Saved: {out_path}")
 
 
-def summarize_clusters(times, sweep, product_name, out_dir):
+def summarize_clusters(times, sweep, product_name, out_dir, suffix=""):
     """One row per (k, cluster): size, % of that product's kept
     timestamps, inertia/silhouette for that k (repeated per cluster row,
     for easy filtering), and month-of-year occurrence (Jan=1..Dec=12) as a
@@ -289,7 +297,7 @@ def summarize_clusters(times, sweep, product_name, out_dir):
                 row[f"month_{month:02d}_pct"] = float(moy_frac.get(month, 0.0))
             rows.append(row)
     df = pd.DataFrame(rows)
-    out_path = out_dir / f"cluster_summary_{product_name.lower()}.csv"
+    out_path = out_dir / f"cluster_summary_{product_name.lower()}{suffix}.csv"
     df.to_csv(out_path, index=False)
     print(f"Saved: {out_path}")
     return df
@@ -321,13 +329,88 @@ def report_anchor_clusters(times, sweep, product_name):
         print(f"  {desc} ({ts_str}): {assignments}")
 
 
+def k_suffix(k_values):
+    """File suffix for a k sweep: none for the original 2..8, else _k<min>-<max>."""
+    ks = list(k_values)
+    return "" if ks == list(K_VALUES) else f"_k{min(ks)}-{max(ks)}"
+
+
+def run_suffix(k_values, min_coverage=MIN_COVERAGE, min_cell_valid=0.0):
+    """k_suffix plus a tag for non-default filters, e.g. _k10-25_cov60_cell10."""
+    tag = k_suffix(k_values)
+    if min_coverage != MIN_COVERAGE or min_cell_valid > 0:
+        tag += f"_cov{round(100 * min_coverage)}_cell{round(100 * min_cell_valid)}"
+    return tag
+
+
+def panel_grid(k):
+    """(rows, cols) of the all-clusters panel figure: 3 columns up to k=9
+    (report figures k=2, k=6 unchanged), 5 columns above (k=25 -> 5x5)."""
+    ncol = min(k, 3) if k <= 9 else 5
+    return int(np.ceil(k / ncol)), ncol
+
+
+# Reference hours for the k = 10-25 extension: the error cases of
+# the WP3 test set (kernel_qc_report.TEST_SET) plus its must-not cases
+# as contrast. Question: does a reference hour get its own small cluster at
+# higher k, or does it stay inside an ordinary regime cluster?
+REFERENCE_HOURS = {
+    "Total": [("2023-12-31T04:30", "#1 shear"), ("2024-10-22T08:00", "#2 divergence (ref)"),
+              ("2024-02-02T08:00", "#3 shear (ref)"), ("2023-11-11T10:00", "#5 error"),
+              ("2023-12-28T01:00", "#6 div/conv (ref)"), ("2023-02-02T20:00", "#8 div/conv (ref)"),
+              ("2023-06-21T07:00", "#10 error"), ("2025-11-08T07:00", "WP2 divergence"),
+              ("2024-10-01T17:00", "Bora jet (must not)"), ("2025-12-25T11:00", "Christmas Bora (must not)")],
+    "AURI": [("2022-03-29T11:30", "shear"), ("2026-02-25T01:00", "shear"), ("2022-01-02T11:00", "WP2 diagonal")],
+    "PIRA": [("2022-02-23T17:00", "divergence"), ("2023-04-23T05:00", "divergence"),
+             ("2024-08-08T01:30", "divergence"), ("2025-07-09T20:30", "shear"), ("2022-03-23T07:30", "shear"),
+             ("2024-12-05T10:30", "WP2 north patch"), ("2022-06-24T10:30", "smooth zero-crossing (must not)")],
+    "TRI1": [("2024-06-11T17:00", "#1 TRI1-only artefact"), ("2024-10-22T03:30", "#8 divergence (ref)"),
+             ("2024-03-15T08:30", "#9 divergence (ref)"), ("2024-03-03T19:30", "#6 single-cell spike"),
+             ("2023-10-02T04:30", "near-zero noise (must not)"), ("2023-11-03T04:00", "real front (must not)")],
+    "IZOL": [("2024-06-28T08:00", "#4 in-field (ref)"), ("2023-06-28T22:00", "#7 error"),
+             ("2023-11-01T22:00", "#8 divergence"), ("2024-07-08T03:30", "#6 in-field patch"),
+             ("2024-04-08T23:00", "WP2 block")],
+}
+
+
+def reference_lookup(times, sweep, product_name, refs):
+    """Per reference hour and k: was the hour kept by the coverage filter, its
+    cluster, that cluster's size (count, %) and size rank (1 = smallest).
+    Dropped hours get kept=False and empty cluster fields."""
+    rows = []
+    for ts, label in refs:
+        idx = np.nonzero(times == np.datetime64(ts))[0]
+        for k, res in sweep.items():
+            row = {"product": product_name, "time": ts, "label": label, "k": k, "kept": bool(len(idx)),
+                   "cluster": None, "cluster_size": None, "cluster_pct": None, "size_rank": None, "n_clusters": k}
+            if len(idx):
+                labels = res["labels"]
+                sizes = np.bincount(labels, minlength=k)
+                c = int(labels[idx[0]])
+                row.update(cluster=c, cluster_size=int(sizes[c]), cluster_pct=100.0 * sizes[c] / len(labels),
+                           size_rank=int((sizes < sizes[c]).sum()) + 1)
+            rows.append(row)
+    return rows
+
+
 def main():
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--k", type=int, nargs="+", default=list(K_VALUES), help="k values (default 2..8)")
+    ap.add_argument("--no-figures", action="store_true", help="skip the per-cluster figures")
+    ap.add_argument("--min-coverage", type=float, default=MIN_COVERAGE,
+                    help="keep hours with >= this fraction of the typical footprint (default 0.75)")
+    ap.add_argument("--min-cell-valid", type=float, default=0.0,
+                    help="drop cells valid in < this fraction of the kept hours (default 0 = keep all)")
+    args = ap.parse_args()
+    suffix = run_suffix(args.k, args.min_coverage, args.min_cell_valid)
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
+    lookup = []
 
     for product_name, (path, variables) in PRODUCTS.items():
         print(f"\n=== [{product_name}] building feature matrix ===")
-        feat = build_feature_matrix(path, variables)
+        feat = build_feature_matrix(path, variables, args.min_coverage, args.min_cell_valid)
         print(
             f"[{product_name}] n_kept={len(feat['times'])} "
             f"n_features={feat['X'].shape[1]} "
@@ -336,11 +419,14 @@ def main():
 
         X_scaled, mean, std = standardize(feat["X"])
 
-        print(f"[{product_name}] running k-means sweep k=2..8")
-        sweep = run_kmeans_sweep(X_scaled)
+        print(f"[{product_name}] running k-means sweep k={args.k}")
+        sweep = run_kmeans_sweep(X_scaled, args.k)
 
-        summarize_clusters(feat["times"], sweep, product_name, REPORTS_DIR)
+        summarize_clusters(feat["times"], sweep, product_name, REPORTS_DIR, suffix)
         report_anchor_clusters(feat["times"], sweep, product_name)
+        lookup += reference_lookup(feat["times"], sweep, product_name, REFERENCE_HOURS[product_name])
+        if args.no_figures:
+            continue
 
         for k, res in sweep.items():
             for c in range(k):
@@ -358,6 +444,10 @@ def main():
                 plot_cluster_centroid_vectors(
                     u_grid, v_grid, feat["lat"], feat["lon"], product_name, k, c, pct, FIGURES_DIR,
                 )
+
+    out = REPORTS_DIR / f"kmeans_reference_lookup{suffix}.csv"
+    pd.DataFrame(lookup).to_csv(out, index=False, float_format="%.2f")
+    print(f"Saved: {out}")
 
 
 if __name__ == "__main__":
